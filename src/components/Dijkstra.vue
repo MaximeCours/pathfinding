@@ -7,6 +7,7 @@
 
 <script>
 import * as Three from 'three'
+import {regexpU} from 'eslint-plugin-node/lib/util/features'
 
 export default {
   name: 'Dijkstra',
@@ -65,67 +66,76 @@ export default {
       }
       tab[x][y] = 'Hero'
       tile[x][y].material = new Three.MeshBasicMaterial({color: 0xf4fefe, side: Three.DoubleSide})
+
 //------------------------------------------------------------------------------------------------------------------
-      function findHero(scene, grid){
+      function findHero (scene, grid) {
         let isFounded = false
-        let [i, j] = [0,0]
-        while (!isFounded && j <= 15){
+        let [i, j] = [0, 0]
+        while (!isFounded && j <= 15) {
           i = 0
-          while(!isFounded && i <= 15){
-            if (grid[i][j] === "Hero"){
+          while (!isFounded && i <= 15) {
+            if (grid[i][j] === 'Hero') {
               isFounded = true
             }
             i++
           }
           j++
         }
-        return [i-1, j-1]
+        return [i - 1, j - 1]
       }
 
-      function step(scene, grid, coords, discoveryGrid, count){
-        console.log(count)
+      function step (scene, grid, coords, discoveryGrid, count, path) {
         const [x, y] = coords
         const toTest = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 
-        setTimeout(() => {
-          toTest.forEach(([xToTest, yToTest]) => {
-            if (!grid[x + xToTest] || !grid[x + xToTest][y + yToTest]){
-              return false
-            }
-            const currentTile = grid[x + xToTest][y + yToTest]
+        const result = toTest.some(([xToTest, yToTest]) => {
+          if (!grid[x + xToTest] || !grid[x + xToTest][y + yToTest]) {
+            return false
+          }
+          const currentTile = grid[x + xToTest][y + yToTest]
 
-            switch (currentTile){
-              case "key":
-                return true
-              case "terre":
-                if (discoveryGrid[x + xToTest][y + yToTest]){
-                  HighlightCheckCase(scene, [[x + xToTest, y + yToTest]], 0x0000FF)
-                  discoveryGrid[x + xToTest][y + yToTest] = false
-                  return step(scene, grid, [x + xToTest, y + yToTest], discoveryGrid, count+1)
-                }
-                return false
-              default:
+          switch (currentTile) {
+            case 'key':
+              console.log('found !')
+              console.log(path)
+              return true
+            case 'terre':
+              if (discoveryGrid[x + xToTest][y + yToTest]) {
                 discoveryGrid[x + xToTest][y + yToTest] = false
-                return false
-            }
+                path = [...path, [x + xToTest, y + yToTest]]
+                return step(scene, grid, [x + xToTest, y + yToTest], discoveryGrid, count + 1, path)
+              }
+              return false
+            default:
+              discoveryGrid[x + xToTest][y + yToTest] = false
+              return false
+          }
+        })
+
+        if (result){
+          path.forEach(([x, y]) => {
+            HighlightCheckCase(scene, [[x, y]], 0x0000FF)
           })
-        }, 1000);
+        }
+
+        return result
       }
 
-      function pathFinding(scene, grid, origin){
+      function pathFinding (scene, grid, origin) {
         let discoveryGrid = []
-        for (let i = 0; i <= 15; i++){
+        for (let i = 0; i <= 15; i++) {
           let row = []
-          for (let j = 0; j <= 15; j++){
+          for (let j = 0; j <= 15; j++) {
             row.push(true)
           }
           discoveryGrid.push(row)
         }
 
-        step(scene, grid, origin, discoveryGrid, 0)
+        return step(scene, grid, origin, discoveryGrid, 0, [])
       }
 
-      console.log("result", pathFinding(this.scene, tab, findHero(this.scene, tab)))
+      console.log(pathFinding(this.scene, tab, findHero(this.scene, tab)))
+
 //------------------------------------------------------------------------------------------------------------------
       function HighlightCheckCase (scene, tiletab, colortile) {
         for (let i = 0; i < tiletab.length; i++) {
